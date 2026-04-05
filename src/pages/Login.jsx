@@ -10,6 +10,9 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // ✅ ENV se API URL lo
+  const API = import.meta.env.VITE_API_URL;
+
   const handleSubmit = async () => {
     if (!email || !password) { toast.error("Fill all fields! 😑"); return; }
     if (isSignup && !name) { toast.error("Enter your name! 😑"); return; }
@@ -19,7 +22,7 @@ function Login() {
       const endpoint = isSignup ? "/api/auth/signup" : "/api/auth/login";
       const body = isSignup ? { name, email, password } : { email, password };
 
-      const res = await fetch(`http://localhost:8080${endpoint}`, {
+      const res = await fetch(`${API}${endpoint}`, {   // 🔥 FIXED LINE
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -30,7 +33,6 @@ function Login() {
       if (data.error) {
         toast.error(data.error);
       } else {
-        // ✅ Token save karo
         localStorage.setItem("token", data.token);
         localStorage.setItem("name", data.name);
         localStorage.setItem("email", data.email);
@@ -38,7 +40,8 @@ function Login() {
         toast.success(isSignup ? "Account created! 🎉" : "Welcome back! 👋");
         navigate("/planner");
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Server error 😢");
     }
     setLoading(false);
@@ -48,12 +51,10 @@ function Login() {
     <div className="min-h-screen bg-yellow-100 flex items-center justify-center p-6">
       <div className="border-4 border-black bg-white p-8 w-full max-w-md shadow-[8px_8px_0px_black]">
 
-        {/* Header */}
         <h1 className="text-3xl font-black text-center border-b-4 border-black pb-4 mb-6">
           {isSignup ? "Create Account 🚀" : "Welcome Back 👋"}
         </h1>
 
-        {/* Toggle */}
         <div className="flex border-4 border-black mb-6">
           <button
             onClick={() => setIsSignup(false)}
@@ -69,7 +70,6 @@ function Login() {
           </button>
         </div>
 
-        {/* Name (Signup only) */}
         {isSignup && (
           <div className="mb-4">
             <label className="font-black block mb-1">Name 👤</label>
@@ -82,7 +82,6 @@ function Login() {
           </div>
         )}
 
-        {/* Email */}
         <div className="mb-4">
           <label className="font-black block mb-1">Email 📧</label>
           <input
@@ -94,7 +93,6 @@ function Login() {
           />
         </div>
 
-        {/* Password */}
         <div className="mb-6">
           <label className="font-black block mb-1">Password 🔒</label>
           <input
@@ -107,7 +105,6 @@ function Login() {
           />
         </div>
 
-        {/* Submit Button */}
         <button
           onClick={handleSubmit}
           disabled={loading}
@@ -116,7 +113,6 @@ function Login() {
           {loading ? "⏳ Loading..." : isSignup ? "Create Account 🚀" : "Login 👋"}
         </button>
 
-        {/* Switch */}
         <p className="text-center mt-4 font-bold">
           {isSignup ? "Already have account?" : "Don't have account?"}
           <button
