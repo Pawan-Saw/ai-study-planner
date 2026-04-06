@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import toast from "react-hot-toast";
 
-const API = import.meta.env.VITE_API_URL; // ✅ Top pe
+const API = import.meta.env.VITE_API_URL;
 
 const formatText = (text) => {
   return text
@@ -50,19 +50,30 @@ function AiChat() {
       });
 
       const raw = await res.text();
-      console.log("AI Raw Response:", raw); // ✅ Debug
+      console.log("AI Raw Response:", raw);
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
 
-      const parsed = JSON.parse(raw);
+      // ✅ Control characters clean karo
+      const cleaned = raw.replace(/[\u0000-\u001F\u007F-\u009F]/g, (char) => {
+        if (char === '\n' || char === '\r' || char === '\t') return char;
+        return ' ';
+      });
+
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = JSON.parse(cleaned);
+      }
 
       if (parsed.error) {
         throw new Error(parsed.error);
       }
 
-      const aiText = parsed.candidates[0].content.parts[0].text;
+      const aiText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text || "No response 😢";
       setMessages((prev) => [...prev, { role: "ai", text: aiText }]);
 
     } catch (err) {
