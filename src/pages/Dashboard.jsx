@@ -20,7 +20,9 @@ function Dashboard() {
       const token = localStorage.getItem("token");
       if (!token) { navigate("/login"); return; }
 
-      const res = await fetch("http://localhost:8080/api/tasks", {
+      const API = import.meta.env.VITE_API_URL; // ✅ Add kiya
+
+      const res = await fetch(`${API}/api/tasks`, { // ✅ Fixed
         headers: { "Authorization": `Bearer ${token}` },
       });
 

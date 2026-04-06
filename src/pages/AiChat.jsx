@@ -40,7 +40,9 @@ function AiChat() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8080/api/ai/ask", {
+      const API = import.meta.env.VITE_API_URL; // ✅ Add kiya
+
+      const res = await fetch(`${API}/api/ai/ask`, { // ✅ Fixed
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
