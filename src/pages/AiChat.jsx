@@ -56,25 +56,28 @@ function AiChat() {
         throw new Error(`HTTP ${res.status}`);
       }
 
-      // ✅ Control characters clean karo
-      const cleaned = raw.replace(/[\u0000-\u001F\u007F-\u009F]/g, (char) => {
-        if (char === '\n' || char === '\r' || char === '\t') return char;
-        return ' ';
-      });
-
-      let parsed;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        parsed = JSON.parse(cleaned);
+      // ✅ Regex se directly text extract karo — JSON.parse bypass!
+      const textMatch = raw.match(/"text":\s*"([\s\S]*?)(?<!\\)"\s*\}/);
+      
+      if (textMatch && textMatch[1]) {
+        const aiText = textMatch[1]
+          .replace(/\\n/g, '\n')
+          .replace(/\\t/g, '\t')
+          .replace(/\\"/g, '"')
+          .replace(/\\\\/g, '\\');
+        setMessages((prev) => [...prev, { role: "ai", text: aiText }]);
+      } else {
+        // ✅ Fallback — JSON parse try karo
+        try {
+          const cleaned = raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+          const parsed = JSON.parse(cleaned);
+          if (parsed.error) throw new Error(parsed.error);
+          const aiText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text || "No response 😢";
+          setMessages((prev) => [...prev, { role: "ai", text: aiText }]);
+        } catch {
+          throw new Error("Could not parse AI response");
+        }
       }
-
-      if (parsed.error) {
-        throw new Error(parsed.error);
-      }
-
-      const aiText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text || "No response 😢";
-      setMessages((prev) => [...prev, { role: "ai", text: aiText }]);
 
     } catch (err) {
       console.error("AI Error:", err);
