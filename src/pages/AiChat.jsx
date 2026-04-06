@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import toast from "react-hot-toast";
 
-// ✅ Markdown formatter
+const API = import.meta.env.VITE_API_URL; // ✅ Top pe
+
 const formatText = (text) => {
   return text
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
@@ -40,9 +41,7 @@ function AiChat() {
     setLoading(true);
 
     try {
-      const API = import.meta.env.VITE_API_URL; // ✅ Add kiya
-
-      const res = await fetch(`${API}/api/ai/ask`, { // ✅ Fixed
+      const res = await fetch(`${API}/api/ai/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -51,10 +50,23 @@ function AiChat() {
       });
 
       const raw = await res.text();
+      console.log("AI Raw Response:", raw); // ✅ Debug
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
       const parsed = JSON.parse(raw);
+
+      if (parsed.error) {
+        throw new Error(parsed.error);
+      }
+
       const aiText = parsed.candidates[0].content.parts[0].text;
       setMessages((prev) => [...prev, { role: "ai", text: aiText }]);
-    } catch {
+
+    } catch (err) {
+      console.error("AI Error:", err);
       toast.error("AI Error 😢");
       setMessages((prev) => [...prev, { role: "ai", text: "Sorry, something went wrong 😢" }]);
     }
@@ -83,69 +95,52 @@ function AiChat() {
   return (
     <div className={`min-h-screen flex flex-col p-4 md:p-8 transition-all duration-300 ${bg}`}>
 
-      {/* Header */}
       <div className="flex items-center gap-3 flex-wrap mb-4">
         <h1 className={`text-2xl md:text-3xl font-black border-4 border-black px-4 py-2 shadow-[4px_4px_0px_black] ${card}`}>
           🤖 AI Study Assistant
         </h1>
-        <button
-          onClick={() => setDark(!dark)}
-          className={`border-4 border-black px-4 py-2 font-bold shadow-[4px_4px_0px_black] ${dark ? "bg-yellow-300 text-black" : "bg-gray-800 text-white"}`}
-        >
+        <button onClick={() => setDark(!dark)}
+          className={`border-4 border-black px-4 py-2 font-bold shadow-[4px_4px_0px_black] ${dark ? "bg-yellow-300 text-black" : "bg-gray-800 text-white"}`}>
           {dark ? "☀️" : "🌑"}
         </button>
-        <button
-          onClick={clearChat}
-          className="border-4 border-black px-4 py-2 font-bold bg-red-300 shadow-[4px_4px_0px_black] hover:bg-red-400 transition"
-        >
+        <button onClick={clearChat}
+          className="border-4 border-black px-4 py-2 font-bold bg-red-300 shadow-[4px_4px_0px_black] hover:bg-red-400 transition">
           🗑️ Clear
         </button>
         <div className={`border-4 border-black px-3 py-2 font-bold text-sm shadow-[4px_4px_0px_black] ${card}`}>
           💬 {messages.length} messages
         </div>
-        {/* User info */}
         <div className="border-4 border-black bg-yellow-300 px-3 py-2 font-bold text-sm shadow-[4px_4px_0px_black]">
           👤 {localStorage.getItem("name") || "User"}
         </div>
       </div>
 
-      {/* Quick Prompts */}
       <div className="flex gap-2 flex-wrap mb-4">
         {quickPrompts.map((q, i) => (
-          <button
-            key={i}
-            onClick={() => setInput(q.text)}
-            className={`border-2 border-black px-3 py-1 text-sm font-bold hover:bg-purple-200 transition shadow-[2px_2px_0px_black] ${card}`}
-          >
+          <button key={i} onClick={() => setInput(q.text)}
+            className={`border-2 border-black px-3 py-1 text-sm font-bold hover:bg-purple-200 transition shadow-[2px_2px_0px_black] ${card}`}>
             {q.label}
           </button>
         ))}
       </div>
 
-      {/* Chat Window */}
       <div className={`flex-1 border-4 border-black p-4 overflow-y-auto h-[52vh] flex flex-col gap-4 shadow-[6px_6px_0px_black] ${card}`}>
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}>
-            <div
-              className={`max-w-[80%] md:max-w-[65%] border-4 border-black px-4 py-3 shadow-[4px_4px_0px_black] ${
-                msg.role === "user"
-                  ? "bg-yellow-300 text-black rounded-tl-2xl rounded-bl-2xl"
-                  : "bg-purple-200 text-black rounded-tr-2xl rounded-br-2xl"
-              }`}
-            >
-              <div className="text-xs font-black mb-2 opacity-70 flex items-center gap-1">
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`max-w-[80%] md:max-w-[65%] border-4 border-black px-4 py-3 shadow-[4px_4px_0px_black] ${
+              msg.role === "user"
+                ? "bg-yellow-300 text-black rounded-tl-2xl rounded-bl-2xl"
+                : "bg-purple-200 text-black rounded-tr-2xl rounded-br-2xl"
+            }`}>
+              <div className="text-xs font-black mb-2 opacity-70">
                 {msg.role === "user" ? "👤 You" : "🤖 AI Assistant"}
               </div>
-              {/* ✅ Formatted text */}
-              <div
-                className="leading-relaxed text-sm md:text-base"
-                dangerouslySetInnerHTML={{ __html: formatText(msg.text) }}
-              />
+              <div className="leading-relaxed text-sm md:text-base"
+                dangerouslySetInnerHTML={{ __html: formatText(msg.text) }} />
             </div>
           </div>
         ))}
 
-        {/* Loading bubble */}
         {loading && (
           <div className="flex justify-start">
             <div className="border-4 border-black px-4 py-3 bg-purple-200 shadow-[4px_4px_0px_black] rounded-tr-2xl rounded-br-2xl">
@@ -162,7 +157,6 @@ function AiChat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="flex gap-2 mt-4">
         <input
           className={`flex-1 border-4 border-black p-3 text-base md:text-lg shadow-[4px_4px_0px_black] focus:outline-none focus:ring-2 focus:ring-purple-400 ${card}`}
@@ -171,20 +165,14 @@ function AiChat() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !loading && sendMessage()}
         />
-        <button
-          onClick={sendMessage}
-          disabled={loading}
+        <button onClick={sendMessage} disabled={loading}
           className={`border-4 border-black px-6 font-black text-lg shadow-[4px_4px_0px_black] transition ${
-            loading
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-purple-400 hover:bg-purple-500 hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_black]"
-          }`}
-        >
+            loading ? "bg-gray-300 cursor-not-allowed" : "bg-purple-400 hover:bg-purple-500 hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_black]"
+          }`}>
           {loading ? "⏳" : "Send 🚀"}
         </button>
       </div>
 
-      {/* Tip */}
       <p className="text-center text-xs font-bold opacity-50 mt-3">
         💡 Press Enter to send • Chat history auto-saved
       </p>
